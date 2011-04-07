@@ -135,25 +135,38 @@
             <available file="${properties.bbwp.bin}" property="properties.bbwp.exists" />
             <fail unless="properties.bbwp.exists" message="Cannot find ${properties.bbwp.bin}. Please edit 'bbwp.dir' in your 'project.properties' file." />
 
+            <exec executable="${properties.bbwp.bin}">
+                <arg file="${build.dir}/${cod.name}.zip" />
+                <arg value="/o" />
+                <arg file="${build.dir}" />
+            </exec>
+
             <if>
                 <equals arg1="@{code-sign}" arg2="true" />
                 <then>
-                    <exec executable="${properties.bbwp.bin}">
-                        <arg file="${build.dir}/${cod.name}.zip" />
-                        <arg value="/g" />
-                        <arg value="${properties.sigtool.password}" />
-                        <arg value="/o" />
-                        <arg file="${build.dir}" />
-                    </exec>
+                    <sign />
                 </then>
-                <else>
-                    <exec executable="${properties.bbwp.bin}">
-                        <arg file="${build.dir}/${cod.name}.zip" />
-                        <arg value="/o" />
-                        <arg file="${build.dir}" />
-                    </exec>
-                </else>
             </if>
+        </sequential>
+    </macrodef>
+
+    <!-- SIGN MACRO -->
+    <macrodef name="sign">
+        <sequential>
+            <!-- Ensure signature password is set. -->
+            <fail unless="properties.sigtool.password" message="Please edit 'sigtool.password' in your 'project.properties' file." />
+
+            <!-- Sign the Standard Install folder. -->
+            <java jar="${properties.bbwp.dir}\bin\SignatureTool.jar" fork="true" timeout="60000" failonerror="true">
+                <arg value="-a" />
+                <arg value="-C" />
+                <arg value="-p" />
+                <arg value="${properties.sigtool.password}" />
+                <arg value="-r" />
+                <arg value="${build.dir}\StandardInstall\" />
+            </java>
+            <!-- Extract the .cod-masquerading-as-a-.zip, and copy over to OTAInstall. -->
+            <unzip src="${build.dir}\StandardInstall\${cod.name}.cod" dest="${build.dir}\OTAInstall" />
         </sequential>
     </macrodef>
 
